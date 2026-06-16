@@ -26,48 +26,103 @@ export const PARSING_TABLE = {
   C: { f: ["f"], g: ["g"] },
 };
 
-export function isTerminal(symbol) {
-  return ["a", "b", "c", "d", "e", "f", "g", "$"].includes(symbol);
+export function isTerminal(
+  symbol,
+  terminals = ["a", "b", "c", "d", "e", "f", "g", "$"],
+) {
+  return terminals.includes(symbol);
 }
 
-export function generateRandomSentence() {
-  let sentence = "";
+const DEFAULT_GENERATION_GRAMMAR = {
+  nonTerminals: ["S", "A", "B", "C"],
+  start: "S",
+  productions: {
+    S: [
+      ["a", "A"],
+      ["b", "B"],
+    ],
+    A: [["c", "A"], ["d"]],
+    B: [["e", "C"], []],
+    C: [["f"], ["g"]],
+  },
+};
 
-  if (Math.random() < 0.5) {
-    sentence += "a";
+/**
+ * Random leftmost derivation over a parsed grammar.
+ * Guards against infinite/runaway recursion with an expansion cap; on cap it
+ * restarts a bounded number of times, then bails to whatever terminals it has.
+ *
+ * @param {{ nonTerminals: string[], start: string, productions: Record<string, string[][]> }} [grammar]
+ * @returns {string} whitespace-separated terminals
+ */
+export function generateRandomSentence(grammar = DEFAULT_GENERATION_GRAMMAR) {
+  const ntSet = new Set(grammar.nonTerminals);
+  const MAX_EXPANSIONS = 200;
+  const MAX_RESTARTS = 20;
 
-    while (Math.random() < 0.6) {
-      sentence += "c";
-    }
-    sentence += "d";
-  } else {
-    sentence += "b";
+  for (let attempt = 0; attempt < MAX_RESTARTS; attempt++) {
+    const sentential = [grammar.start];
+    let expansions = 0;
+    let capped = false;
 
-    if (Math.random() < 0.5) {
-      sentence += "e";
-
-      if (Math.random() < 0.5) {
-        sentence += "f";
-      } else {
-        sentence += "g";
+    while (sentential.some((s) => ntSet.has(s))) {
+      if (expansions++ > MAX_EXPANSIONS) {
+        capped = true;
+        break;
       }
+      const idx = sentential.findIndex((s) => ntSet.has(s));
+      const nt = sentential[idx];
+      const alts = grammar.productions[nt] || [];
+      if (alts.length === 0) {
+        capped = true;
+        break;
+      }
+      const alt = alts[Math.floor(Math.random() * alts.length)];
+      sentential.splice(idx, 1, ...alt);
+    }
+
+    if (!capped) {
+      return sentential.join(" ");
     }
   }
 
-  return sentence.split("").join(" ");
+  // Bail after exhausting restarts: best-effort terminal-only derivation.
+  const sentential = [grammar.start];
+  let expansions = 0;
+  while (sentential.some((s) => ntSet.has(s)) && expansions++ < MAX_EXPANSIONS) {
+    const idx = sentential.findIndex((s) => ntSet.has(s));
+    const nt = sentential[idx];
+    const alts = grammar.productions[nt] || [];
+    // prefer the shortest alternative to converge
+    const alt = alts.length
+      ? alts.reduce((a, b) => (b.length < a.length ? b : a))
+      : [];
+    sentential.splice(idx, 1, ...alt);
+  }
+  return sentential.filter((s) => !ntSet.has(s)).join(" ");
 }
 
-export function initParser(sentence) {
+const DEFAULT_TERMINALS = ["a", "b", "c", "d", "e", "f", "g", "$"];
+
+export function initParser(sentence, options = {}) {
+  const {
+    table = PARSING_TABLE,
+    terminals = DEFAULT_TERMINALS,
+    start = "S",
+  } = options;
+
   const tokens = sentence.replace(/\s+/g, "").split("");
   tokens.push("$");
 
   return {
     tokens,
     tokenIndex: 0,
-    stack: ["$", "S"],
+    stack: ["$", start],
     steps: [],
     status: "running",
     errorMsg: "",
+    table,
+    terminals,
   };
 }
 
@@ -90,13 +145,16 @@ export function parseStep(state) {
     return newState;
   }
 
+  const table = newState.table || PARSING_TABLE;
+  const terminals = newState.terminals || DEFAULT_TERMINALS;
+
   const currentToken = newState.tokens[newState.tokenIndex] || "$";
 
   const stackView = ["$", ...newState.stack.slice(1).reverse()].join(" ");
   const top = newState.stack.pop();
   const inputView = newState.tokens.slice(newState.tokenIndex).join(" ");
 
-  if (isTerminal(top)) {
+  if (isTerminal(top, terminals)) {
     if (top === currentToken) {
       if (top === "$") {
         newState.steps.push({
@@ -129,7 +187,7 @@ export function parseStep(state) {
       });
     }
   } else {
-    const production = PARSING_TABLE[top] && PARSING_TABLE[top][currentToken];
+    const production = table[top] && table[top][currentToken];
     if (production) {
       for (let i = production.length - 1; i >= 0; i--) {
         newState.stack.push(production[i]);
