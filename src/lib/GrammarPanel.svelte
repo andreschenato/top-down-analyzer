@@ -1,5 +1,5 @@
 <script>
-  import { GRAMMAR, FIRST, FOLLOW } from '../parser.js';
+  import { GRAMMAR, FIRST, FOLLOW } from './parser.js';
   const nonTerminals = Object.keys(GRAMMAR);
 </script>
 

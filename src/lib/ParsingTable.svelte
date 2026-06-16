@@ -1,5 +1,5 @@
 <script>
-  import { PARSING_TABLE } from '../parser.js';
+  import { PARSING_TABLE } from './parser.js';
   const nonTerminals = Object.keys(PARSING_TABLE);
   const terminals = ["a", "b", "c", "d", "e", "f", "g", "$"];
 </script>
