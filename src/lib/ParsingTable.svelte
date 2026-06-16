@@ -1,7 +1,10 @@
 <script>
     // Props-driven (Step 4).
+    /** @type {import("./types.js").ParsingTable | null} */
     export let table = null;
+    /** @type {string[]} */
     export let terminals = [];
+    /** @type {string[]} */
     export let nonTerminals = [];
 
     // show all terminals except the reserved end-marker isn't a grammar symbol;

@@ -1,10 +1,15 @@
 import { EPSILON } from "./grammar.js";
 
+/** @typedef {import("./types.js").Grammar} Grammar */
+/** @typedef {import("./types.js").SymbolSets} SymbolSets */
+/** @typedef {import("./types.js").ParsingTable} ParsingTable */
+/** @typedef {import("./types.js").Conflict} Conflict */
+
 /**
  * Detect (direct or indirect) left recursion. A grammar with left recursion is
  * not LL(1) and must NOT be auto-transformed — we only report it.
  *
- * @param {ReturnType<import("./grammar.js").parseGrammar>} grammar
+ * @param {Grammar} grammar
  * @returns {string[]} the non-terminals involved in some left-recursive cycle
  */
 export function detectLeftRecursion(grammar) {
@@ -30,6 +35,7 @@ export function detectLeftRecursion(grammar) {
 
   // Build "begins-with" edges: A -> ... where a leading NT (possibly after
   // nullable NTs) is B.
+  /** @type {Record<string, Set<string>>} */
   const edges = {};
   for (const nt of nonTerminals) edges[nt] = new Set();
   for (const nt of nonTerminals) {
@@ -46,12 +52,15 @@ export function detectLeftRecursion(grammar) {
   }
 
   // Find non-terminals that can reach themselves through begins-with edges.
+  /** @type {Set<string>} */
   const offending = new Set();
   for (const start of nonTerminals) {
+    /** @type {Set<string>} */
     const seen = new Set();
     const stack = [...edges[start]];
     while (stack.length) {
-      const cur = stack.pop();
+      // `stack.length` guards the pop; it is always defined here.
+      const cur = /** @type {string} */ (stack.pop());
       if (cur === start) {
         offending.add(start);
         break;
@@ -69,15 +78,17 @@ export function detectLeftRecursion(grammar) {
  * Compute FIRST sets via fixed-point iteration.
  * ε is included in FIRST(X) when X can derive the empty string.
  *
- * @param {ReturnType<import("./grammar.js").parseGrammar>} grammar
- * @returns {Record<string, Set<string>>}
+ * @param {Grammar} grammar
+ * @returns {SymbolSets}
  */
 export function computeFirst(grammar) {
   const { nonTerminals, productions } = grammar;
   const ntSet = new Set(nonTerminals);
+  /** @type {SymbolSets} */
   const first = {};
   for (const nt of nonTerminals) first[nt] = new Set();
 
+  /** @param {string} sym @returns {Set<string>} */
   const firstOfSymbol = (sym) => {
     if (ntSet.has(sym)) return first[sym];
     return new Set([sym]); // terminal
@@ -126,9 +137,13 @@ export function computeFirst(grammar) {
 
 /**
  * FIRST of a sequence of symbols (a production body).
+ * @param {string[]} seq
+ * @param {SymbolSets} first
+ * @param {Set<string>} ntSet
  * @returns {Set<string>} includes ε if the whole sequence is nullable.
  */
 function firstOfSequence(seq, first, ntSet) {
+  /** @type {Set<string>} */
   const result = new Set();
   let nullable = true;
   for (const sym of seq) {
@@ -149,13 +164,14 @@ function firstOfSequence(seq, first, ntSet) {
  * Compute FOLLOW sets via fixed-point iteration.
  * The start symbol gets `$`. ε is never a member of FOLLOW.
  *
- * @param {ReturnType<import("./grammar.js").parseGrammar>} grammar
- * @param {Record<string, Set<string>>} first
- * @returns {Record<string, Set<string>>}
+ * @param {Grammar} grammar
+ * @param {SymbolSets} first
+ * @returns {SymbolSets}
  */
 export function computeFollow(grammar, first) {
   const { nonTerminals, productions, start } = grammar;
   const ntSet = new Set(nonTerminals);
+  /** @type {SymbolSets} */
   const follow = {};
   for (const nt of nonTerminals) follow[nt] = new Set();
   follow[start].add("$");
@@ -201,20 +217,20 @@ export function computeFollow(grammar, first) {
  * Build the LL(1) parsing table M.
  * Records a conflict whenever two productions map to the same cell.
  *
- * @param {ReturnType<import("./grammar.js").parseGrammar>} grammar
- * @param {Record<string, Set<string>>} first
- * @param {Record<string, Set<string>>} follow
- * @returns {{
- *   table: Record<string, Record<string, string[]>>,
- *   conflicts: Array<{ nonTerminal: string, terminal: string, productions: string[][] }>
- * }}
+ * @param {Grammar} grammar
+ * @param {SymbolSets} first
+ * @param {SymbolSets} follow
+ * @returns {{ table: ParsingTable, conflicts: Conflict[] }}
  */
 export function buildParsingTable(grammar, first, follow) {
   const { nonTerminals, productions } = grammar;
   const ntSet = new Set(nonTerminals);
+  /** @type {ParsingTable} */
   const table = {};
+  /** @type {Conflict[]} */
   const conflicts = [];
   // track which production filled each cell, to detect collisions
+  /** @type {ParsingTable} */
   const cellProductions = {};
 
   for (const nt of nonTerminals) {
@@ -222,6 +238,11 @@ export function buildParsingTable(grammar, first, follow) {
     cellProductions[nt] = {};
   }
 
+  /**
+   * @param {string} nt
+   * @param {string} terminal
+   * @param {string[]} alt
+   */
   const place = (nt, terminal, alt) => {
     if (Object.prototype.hasOwnProperty.call(table[nt], terminal)) {
       // conflict: cell already occupied

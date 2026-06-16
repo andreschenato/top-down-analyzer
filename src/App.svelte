@@ -26,15 +26,21 @@ C -> f | g`;
     let grammarText = DEFAULT_GRAMMAR_TEXT;
 
     // Computed grammar state.
+    /** @type {import("./lib/types.js").Grammar | null} */
     let grammar = null;
+    /** @type {import("./lib/types.js").SymbolSets | null} */
     let first = null;
+    /** @type {import("./lib/types.js").SymbolSets | null} */
     let follow = null;
+    /** @type {import("./lib/types.js").ParsingTable | null} */
     let table = null;
+    /** @type {import("./lib/types.js").Conflict[]} */
     let conflicts = [];
     let grammarError = "";
 
     let sentence = "";
     let sentenceError = "";
+    /** @type {import("./lib/types.js").ParserState | null} */
     let parserState = null;
 
     function handleCompute() {

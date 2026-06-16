@@ -8,7 +8,9 @@ A -> c A | d
 B -> e C | ε
 C -> f | g`;
 
+/** @param {Record<string, string[]>} record */
 function setMap(record) {
+  /** @type {Record<string, Set<string>>} */
   const out = {};
   for (const k of Object.keys(record)) out[k] = new Set(record[k]);
   return out;

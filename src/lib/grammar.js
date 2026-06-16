@@ -1,5 +1,11 @@
+/** @typedef {import("./types.js").Grammar} Grammar */
+
 const EPSILON = "ε";
 
+/**
+ * @param {string} tok
+ * @returns {boolean}
+ */
 function isEpsilonToken(tok) {
   return tok === EPSILON || tok === "epsilon";
 }
@@ -21,12 +27,7 @@ function isEpsilonToken(tok) {
  * the end marker and may never appear as a grammar symbol.
  *
  * @param {string} text
- * @returns {{
- *   nonTerminals: string[],
- *   terminals: string[],
- *   start: string,
- *   productions: Record<string, string[][]>
- * }}
+ * @returns {Grammar}
  */
 export function parseGrammar(text) {
   const lines = (text || "")
@@ -38,8 +39,11 @@ export function parseGrammar(text) {
     throw new Error("Gramática vazia: nenhuma produção encontrada.");
   }
 
+  /** @type {Record<string, string[][]>} */
   const productions = {};
+  /** @type {string[]} */
   const nonTerminalOrder = [];
+  /** @type {string | null} */
   let start = null;
 
   for (const line of lines) {
@@ -64,6 +68,7 @@ export function parseGrammar(text) {
     }
 
     const alternatives = rhs.split("|");
+    /** @type {string[][]} */
     const parsedAlts = [];
 
     for (const alt of alternatives) {
@@ -105,6 +110,7 @@ export function parseGrammar(text) {
   const nonTerminals = nonTerminalOrder;
   const ntSet = new Set(nonTerminals);
 
+  /** @type {Set<string>} */
   const terminalSet = new Set();
   for (const nt of nonTerminals) {
     for (const alt of productions[nt]) {
@@ -117,7 +123,8 @@ export function parseGrammar(text) {
   return {
     nonTerminals,
     terminals: [...terminalSet],
-    start,
+    // `start` is set on the first iteration above; lines.length > 0 is enforced.
+    start: /** @type {string} */ (start),
     productions,
   };
 }

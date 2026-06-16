@@ -1,4 +1,5 @@
 <script>
+    /** @type {import("./types.js").Step[]} */
     export let steps = [];
 </script>
 

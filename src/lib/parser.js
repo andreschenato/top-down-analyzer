@@ -1,3 +1,7 @@
+/** @typedef {import("./types.js").Grammar} Grammar */
+/** @typedef {import("./types.js").ParsingTable} ParsingTable */
+/** @typedef {import("./types.js").ParserState} ParserState */
+
 export const GRAMMAR = {
   S: ["a A", "b B"],
   A: ["c A", "d"],
@@ -26,6 +30,11 @@ export const PARSING_TABLE = {
   C: { f: ["f"], g: ["g"] },
 };
 
+/**
+ * @param {string} symbol
+ * @param {string[]} [terminals]
+ * @returns {boolean}
+ */
 export function isTerminal(
   symbol,
   terminals = ["a", "b", "c", "d", "e", "f", "g", "$"],
@@ -104,6 +113,11 @@ export function generateRandomSentence(grammar = DEFAULT_GENERATION_GRAMMAR) {
 
 const DEFAULT_TERMINALS = ["a", "b", "c", "d", "e", "f", "g", "$"];
 
+/**
+ * @param {string} sentence
+ * @param {{ table?: ParsingTable, terminals?: string[], start?: string }} [options]
+ * @returns {ParserState}
+ */
 export function initParser(sentence, options = {}) {
   const {
     table = PARSING_TABLE,
@@ -126,6 +140,10 @@ export function initParser(sentence, options = {}) {
   };
 }
 
+/**
+ * @param {ParserState} state
+ * @returns {ParserState}
+ */
 export function parseStep(state) {
   if (state.status !== "running") return state;
 
@@ -151,7 +169,8 @@ export function parseStep(state) {
   const currentToken = newState.tokens[newState.tokenIndex] || "$";
 
   const stackView = ["$", ...newState.stack.slice(1).reverse()].join(" ");
-  const top = newState.stack.pop();
+  // The empty-stack case returns above, so `pop()` is always defined here.
+  const top = /** @type {string} */ (newState.stack.pop());
   const inputView = newState.tokens.slice(newState.tokenIndex).join(" ");
 
   if (isTerminal(top, terminals)) {
@@ -213,6 +232,10 @@ export function parseStep(state) {
   return newState;
 }
 
+/**
+ * @param {ParserState} state
+ * @returns {ParserState}
+ */
 export function parseAll(state) {
   let currentState = state;
   while (currentState.status === "running") {
