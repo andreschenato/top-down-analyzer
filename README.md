@@ -1,5 +1,6 @@
 # Analisador Sintático Top-Down Preditivo Tabular
 Este projeto implementa um simples analisador sintático tabular preditivo LL(1) usando o framework Svelte.
+Você pode testar o projeto no seguinte link: https://top-down.andreschenato.dev.br
 
 ## Funcionalidades
 - Geração automática de sentenças válidas.
