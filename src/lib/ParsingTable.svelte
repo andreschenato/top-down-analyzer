@@ -5,7 +5,7 @@
 </script>
 
 <div class="card" style="overflow-x: auto;">
-  <h2>Tabela de Parsing (M)</h2>
+  <h2>Tabela de Parsing</h2>
   <table>
     <thead>
       <tr>

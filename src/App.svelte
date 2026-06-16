@@ -20,6 +20,7 @@
       return;
     }
     parserState = initParser(sentence);
+    parserState = parseStep(parserState);
   }
 
   function handleStep() {

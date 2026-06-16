@@ -91,19 +91,27 @@ export function parseStep(state) {
     return newState;
   }
 
-  const top = newState.stack.pop();
   const currentToken = newState.tokens[newState.tokenIndex] || "$";
   
-  const stackView = [...newState.stack].reverse().join(" ");
+  const stackView = ["$", ...newState.stack.slice(1).reverse()].join(" ");
+  const top = newState.stack.pop();
   const inputView = newState.tokens.slice(newState.tokenIndex).join(" ");
 
   if (isTerminal(top)) {
     if (top === currentToken) {
-      newState.steps.push({
-        stack: stackView,
-        input: inputView,
-        action: `Lê e remove '${top}'`
-      });
+      if (top === "$") {
+        newState.steps.push({
+          stack: stackView,
+          input: inputView,
+          action: `Aceita em ${newState.steps.length + 1} passos`
+        });
+      } else {
+        newState.steps.push({
+          stack: stackView,
+          input: inputView,
+          action: `Lê e remove '${top}'`
+        });
+      }
       newState.tokenIndex++;
       
       if (newState.stack.length === 0 && newState.tokenIndex === newState.tokens.length) {
@@ -115,7 +123,7 @@ export function parseStep(state) {
       newState.steps.push({
         stack: stackView,
         input: inputView,
-        action: `ERRO: Esperava '${top}', encontrou '${currentToken}'`
+        action: `Rejeita em ${newState.steps.length + 1} passos: Esperava '${top}', encontrou '${currentToken}'`
       });
     }
   } else {
@@ -139,7 +147,7 @@ export function parseStep(state) {
       newState.steps.push({
         stack: stackView,
         input: inputView,
-        action: `ERRO: Célula M[${top}, ${currentToken}] vazia`
+        action: `Rejeita em ${newState.steps.length + 1} passos: Célula M[${top}, ${currentToken}] vazia`
       });
     }
   }

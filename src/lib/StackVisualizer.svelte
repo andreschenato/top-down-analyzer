@@ -13,7 +13,7 @@
           <th>Passo</th>
           <th>Pilha</th>
           <th>Entrada</th>
-          <th>Ação (Regra/Match)</th>
+          <th>Ação</th>
         </tr>
       </thead>
       <tbody>

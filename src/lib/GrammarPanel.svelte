@@ -7,7 +7,7 @@
   <h2>Gramática, First e Follow</h2>
   <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
     <div>
-      <h3>Gramática LL(1)</h3>
+      <h3>Gramática</h3>
       <ul style="list-style-type: none; padding: 0;">
         {#each nonTerminals as nt}
           <li><strong>{nt}</strong> → {GRAMMAR[nt].join(' | ')}</li>
